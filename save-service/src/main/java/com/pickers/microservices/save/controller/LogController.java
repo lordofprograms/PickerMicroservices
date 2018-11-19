@@ -1,53 +1,50 @@
 package com.pickers.microservices.save.controller;
 
 import com.pickers.microservices.save.model.LogModel;
-import com.pickers.microservices.save.repository.LogRepository;
+import com.pickers.microservices.save.service.LogService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.ModelAndView;
 
 @RestController
 @RequestMapping("/logs")
 public class LogController {
 
-    @AutoWired
-    LogRepository repository;
+    @Autowired private LogService logService;
 
-    @RequestMapping(method = RequestMethod.GET, value = "/")
-    public Iterable<LogModel> getAll() {
-        return repository.findAll();
+    @RequestMapping(value = "/", method = RequestMethod.GET)
+    public ModelAndView showAll() {
+        ModelAndView modelAndView = new ModelAndView("all");
+
+        modelAndView.addObject("logs", logService.getAll());
+
+        return modelAndView;
     }
 
-    @RequestMapping(method = RequestMethod.POST, value = "/")
-    public String save(@RequestBody LogModel logModel) {
-        repository.save(logModel);
-        return logModel.getId();
+    @RequestMapping(value = "/add", method = RequestMethod.GET)
+    public ModelAndView showAddForm() {
+        return new ModelAndView("add_form", "contact", new LogModel());
     }
 
-    @RequestMapping(method=RequestMethod.PUT, value = "/{id}")
-    public LogModel update(@PathVariable String id, @RequestBody LogModel logModel) {
-        LogModel log = repository.findOne(logModel);
-        if(logModel.getLatitude() != null) {
-            log.setLatitude(logModel.getLatitude());
-        }
-        if (logModel.getLongitude() != null) {
-            log.setLatitude(logModel.getLongitude());
-        }
-        if (logModel.getHeight() != null) {
-            log.setHeight(logModel.getHeight());
-        }
-        return log;
+    @RequestMapping(value = "/add", method = RequestMethod.POST)
+    public String addContact(@ModelAttribute("log") LogModel logModel) {
+        if(logModel.getId() == null) logService.add(logModel);
+        else logService.update(logModel);
+
+        return "redirect:/";
     }
 
-    @RequestMapping(method=RequestMethod.DELETE, value="/{id}")
-    public String delete(@PathVariable String id) {
-        LogModel logModel = repository.findOne(id);
-        repository.delete(logModel);
+    @RequestMapping(value = "/edit", method = RequestMethod.GET)
+    public ModelAndView showEditForm(@RequestParam() Long id) {
+        return new ModelAndView("add_form", "log", logService.get(id));
+    }
 
-        return "product deleted";
+    @RequestMapping(value = "/delete", method = RequestMethod.GET)
+    public String deleteContact(@RequestParam() Long id) {
+        logService.remove(id);
+
+        return "redirect:/";
     }
 
 }
+
